@@ -7,10 +7,6 @@ import (
 	"strings"
 )
 
-func main() {
-	fmt.Println("Welcome to the calculator")
-}
-
 //Add Adds 2 to numbers
 func Add(numbersInput string) (total int, err error) {
 
@@ -47,7 +43,11 @@ func Add(numbersInput string) (total int, err error) {
 	for _, d := range delimiters {
 		preppedNums = strings.ReplaceAll(preppedNums, d, ",")
 	}
-	numbers = addToSliceIfNumber(numbers, strings.Split(preppedNums, ","))
+	numbers, err = addToSliceIfNumber(numbers, strings.Split(preppedNums, ","))
+
+	if err != nil {
+		return total, err
+	}
 
 	for _, i := range numbers {
 
@@ -87,13 +87,14 @@ func extractDelimiters(delimiterInput string) (delimiters []string) {
 	return delimiters
 }
 
-func addToSliceIfNumber(dest []int, source []string) []int {
+func addToSliceIfNumber(dest []int, source []string) ([]int, error) {
 	for _, c := range source {
 		i, err := strconv.Atoi(strings.TrimSpace(c))
-		if err == nil {
-			dest = append(dest, i)
+		if err != nil {
+			return dest, err
 		}
+		dest = append(dest, i)
 	}
 
-	return dest
+	return dest, nil
 }
