@@ -8,86 +8,64 @@ import (
 )
 
 //Add Adds 2 to numbers
-func Add(numbersInput string) (total int, err error) {
+func Add(numbersInput string) (int, error) {
 
-	var (
-		delimiters      []string
-		numbers         []int
-		numbersBuf      strings.Builder
-		negativeNumBuff strings.Builder
-		negativesFound  bool
-	)
-
-	negativeNumBuff.WriteString("negatives not allowed. Negatives found: ")
 	if len(numbersInput) == 0 {
 		return 0, nil
 	}
+	numbers, err := extractNumbers(numbersInput)
 
+	if err != nil {
+		return 0, err
+	}
+	return totalNumbers(numbers)
+}
+
+func extractNumbers(numbersInput string) (numbers []int, err error) {
+	var numbersBuf strings.Builder
 	scanner := bufio.NewScanner(strings.NewReader(numbersInput))
-
 	scanner.Scan()
 	l := scanner.Text()
-	if numbersInput[:2] == "//" {
-		delimiters = extractDelimiters(l[2:])
-	} else {
-		delimiters = []string{","}
+	delimiters := extractDelimiters(l)
+	if l[:2] != "//" {
 		numbersBuf.WriteString(l)
 	}
-
 	for scanner.Scan() {
 		l := scanner.Text()
 		numbersBuf.WriteString(l)
 	}
-
 	preppedNums := numbersBuf.String()
 	for _, d := range delimiters {
 		preppedNums = strings.ReplaceAll(preppedNums, d, ",")
 	}
-	numbers, err = addToSliceIfNumber(numbers, strings.Split(preppedNums, ","))
-
-	if err != nil {
-		return total, err
-	}
-
-	for _, i := range numbers {
-
-		if i < 0 {
-			negativesFound = true
-			negativeNumBuff.WriteString(fmt.Sprint(i))
-			negativeNumBuff.WriteString("\t")
-		} else if i <= 1000 {
-			total += int(i)
-		}
-	}
-	if negativesFound {
-		err = fmt.Errorf(negativeNumBuff.String())
-	}
-	return total, err
+	return appendNumbers(numbers, strings.Split(preppedNums, ","))
 }
 
 func extractDelimiters(delimiterInput string) (delimiters []string) {
-	delimArray := []rune(delimiterInput)
-	currentDelimiter := []rune{}
-	for _, c := range delimArray {
-
-		switch c {
-		case '[':
-			continue
-		case ']':
-			delimiters = append(delimiters, string(currentDelimiter))
-			currentDelimiter = []rune{}
-		default:
-			currentDelimiter = append(currentDelimiter, c)
+	if delimiterInput[:2] == "//" {
+		delimArray := []rune(delimiterInput[2:])
+		currentDelimiter := []rune{}
+		for _, c := range delimArray {
+			switch c {
+			case '[':
+				continue
+			case ']':
+				delimiters = append(delimiters, string(currentDelimiter))
+				currentDelimiter = []rune{}
+			default:
+				currentDelimiter = append(currentDelimiter, c)
+			}
 		}
+		if len(currentDelimiter) != 0 {
+			delimiters = append(delimiters, string(currentDelimiter))
+		}
+	} else {
+		delimiters = []string{","}
 	}
-	if len(currentDelimiter) != 0 {
-		delimiters = append(delimiters, string(currentDelimiter))
-	}
-
 	return delimiters
 }
 
-func addToSliceIfNumber(dest []int, source []string) ([]int, error) {
+func appendNumbers(dest []int, source []string) ([]int, error) {
 	for _, c := range source {
 		i, err := strconv.Atoi(strings.TrimSpace(c))
 		if err != nil {
@@ -97,4 +75,24 @@ func addToSliceIfNumber(dest []int, source []string) ([]int, error) {
 	}
 
 	return dest, nil
+}
+
+func totalNumbers(numbers []int) (total int, err error) {
+	var (
+		negativeNumBuff strings.Builder
+		negativesFound  bool
+	)
+	for _, i := range numbers {
+		if i < 0 {
+			negativesFound = true
+			negativeNumBuff.WriteString(fmt.Sprint(i))
+			negativeNumBuff.WriteString("\t")
+		} else if i <= 1000 {
+			total += i
+		}
+	}
+	if negativesFound {
+		err = fmt.Errorf("Negatives not allowed. Negatives found:%v", negativeNumBuff.String())
+	}
+	return total, err
 }
