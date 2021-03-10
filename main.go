@@ -9,12 +9,10 @@ import (
 
 //Add Adds 2 to numbers
 func Add(numbersInput string) (int, error) {
-
 	if len(numbersInput) == 0 {
 		return 0, nil
 	}
 	numbers, err := extractNumbers(numbersInput)
-
 	if err != nil {
 		return 0, err
 	}
